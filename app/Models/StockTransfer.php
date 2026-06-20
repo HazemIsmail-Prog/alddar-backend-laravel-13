@@ -12,6 +12,18 @@ class StockTransfer extends Model
 
     protected $guarded = [];
 
+    protected $appends = ['can_update', 'can_delete'];
+
+    public function getCanUpdateAttribute()
+    {
+        return request()->user()->hasPermission('stock_transfers_update');
+    }
+
+    public function getCanDeleteAttribute()
+    {
+        return request()->user()->hasPermission('stock_transfers_delete');
+    }
+
     protected static function booted()
     {
         static::creating(function ($stockTransfer) {

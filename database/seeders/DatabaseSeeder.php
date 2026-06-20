@@ -7,6 +7,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Role;
 use App\Models\Permission;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -18,13 +19,20 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory()->create([
-            'name_en' => 'Test User',
-            'name_ar' => 'مستخدم تجريبي',
-            // 'email' => 'test@example.com',
+            'name_en' => 'Hazem Ismail',
+            'name_ar' => 'حازم اسماعيل',
             'civil_id' => '282102800373',
+            'password' => Hash::make('282102800373'),
         ]);
 
-        User::factory(10)->create();
+        User::factory()->create([
+            'name_en' => 'Takieldin Samir Mohamed Badrelazab',
+            'name_ar' => 'تقي الدين سمير محمد بدر العزب',
+            'civil_id' => '294031103172',
+            'password' => Hash::make('294031103172'),
+        ]);
+
+        // User::factory(10)->create();
 
         $this->call([
             DepartmentSeeder::class,
@@ -32,7 +40,7 @@ class DatabaseSeeder extends Seeder
             WarehouseSeeder::class,
             CategorySeeder::class,
             // ProductSeeder::class,
-            PartySeeder::class,
+            // PartySeeder::class,
             OrderStatusSeeder::class,
             ChartOfAccountSeeder::class,
         ]);

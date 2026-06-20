@@ -30,9 +30,18 @@ class StockTransferController
             });
         }
 
+        $stockTransfers = $query->paginate($request->integer('per_page', 15));
+
         return response()->json(
-            $query->paginate($request->integer('per_page', 15))
-        );
+            [
+                'data' => $stockTransfers->items(),
+                'current_page' => $stockTransfers->currentPage(),
+                'last_page' => $stockTransfers->lastPage(),
+                'next_page_url' => $stockTransfers->nextPageUrl(),
+                'per_page' => $stockTransfers->perPage(),
+                'total' => $stockTransfers->total(),
+                'can_create' => request()->user()->hasPermission('stock_transfers_create'),
+            ]);
     }
 
     public function store(StoreStockTransferRequest $request)

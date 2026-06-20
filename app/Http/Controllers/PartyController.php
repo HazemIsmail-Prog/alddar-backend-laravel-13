@@ -51,8 +51,12 @@ class PartyController
             ->with($this->with)
             ->orderBy('id', 'desc');
 
-        if($request->has('search')) {
-            $query->whereAny($this->searchable, 'like', '%'.$request->search.'%');
+        if($request->has('name')) {
+            $query->whereAny($this->searchable, 'like', '%'.$request->name.'%');
+        }
+
+        if($request->has('phone')) {
+            $query->whereRelation('phones', 'number', 'like', '%'.$request->phone.'%');
         }
 
         if($request->boolean('is_client')) {
@@ -124,8 +128,33 @@ class PartyController
 
     public function destroy(Party $party)
     {
-        if(!request()->user()->hasPermission('parties_delete')) {
-            return response()->json(['message' => 'ليس لديك صلاحية لحذف الأطراف'], 403);
+
+        if(!request()->user()->hasPermission('clients_delete') && !request()->user()->hasPermission('vendors_delete')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لحذف الأطراف', 
+                    'en' => 'You do not have permission to delete parties'
+                ],
+            ], 403);
+        }
+
+
+        if($party->is_client && !$party->is_vendor && !request()->user()->hasPermission('clients_delete')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لحذف العملاء', 
+                    'en' => 'You do not have permission to delete clients'
+                ],
+            ], 403);
+        }
+
+        if($party->is_vendor && !$party->is_client && !request()->user()->hasPermission('vendors_delete')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لحذف الموردين', 
+                    'en' => 'You do not have permission to delete vendors'
+                ],
+            ], 403);
         }
 
         $party->delete();

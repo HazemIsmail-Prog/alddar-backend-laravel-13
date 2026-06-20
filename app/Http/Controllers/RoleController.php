@@ -37,10 +37,6 @@ class RoleController
                 $q->whereIn('permissions.id', $request->permissions);
             });
         }
-
-        if($request->has('is_active')) {
-            $query->where('is_active', true);
-        }
         
         $roles = $query->paginate($request->has('per_page') ? $request->integer('per_page') : 15);
 

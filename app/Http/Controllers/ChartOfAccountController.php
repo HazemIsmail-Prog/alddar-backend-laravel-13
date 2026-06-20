@@ -30,7 +30,15 @@ class ChartOfAccountController
 
         $chartOfAccounts = $query->paginate($request->has('per_page') ? $request->integer('per_page') : 15);
 
-        return response()->json($chartOfAccounts);
+        return response()->json([
+            'data' => $chartOfAccounts->items(),
+            'current_page' => $chartOfAccounts->currentPage(),
+            'last_page' => $chartOfAccounts->lastPage(),
+            'next_page_url' => $chartOfAccounts->nextPageUrl(),
+            'per_page' => $chartOfAccounts->perPage(),
+            'total' => $chartOfAccounts->total(),
+            'can_create' => request()->user()->hasPermission('chart_of_accounts_create'),
+        ]);
     }
 
     public function store(StoreChartOfAccountRequest $request)

@@ -4,8 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Appends;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
+// use Illuminate\Database\Eloquent\Attributes\Appends;
+// use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 // use Illuminate\Database\Eloquent\Attributes\UnGuarded;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
 // #[UnGuarded]
 // #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-#[Appends(['can', 'name'])]
+// #[Appends(['can', 'name'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -24,7 +24,7 @@ class User extends Authenticatable
 
     protected $guarded = [];
 
-    protected $appends = ['can_update', 'can_delete'];
+    protected $appends = ['can_update', 'can_delete', 'name'];
 
     /**
      * Get the attributes that should be cast.

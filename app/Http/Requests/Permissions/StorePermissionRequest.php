@@ -19,4 +19,5 @@ class StorePermissionRequest extends FormRequest
             'name_ar' => 'required|string|max:255',
         ];
     }
+    
 }

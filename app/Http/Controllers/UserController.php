@@ -119,34 +119,65 @@ class UserController
 
     public function update(User $user, UpdateUserRequest $request)
     {
+
         $validated = $request->validated();
         if ($request->password) {
             $validated['password'] = bcrypt($request->password);
         }
         DB::beginTransaction();
+
         try {
+
             $user->update($validated);
+
             if ($request->has('permissions')) {
+                // Get the original permissions as a sorted array of IDs
+                $originalPermissions = $user->permissions()->pluck('id')->sort()->values()->toArray();
+                // Get the requested permissions as a sorted array of IDs
+                $newPermissions = collect($request->permissions)->sort()->values()->toArray();
+
+                // Sync the new permissions
                 $user->permissions()->sync($request->permissions);
-                $user->tokens()->delete();
+
+                // Delete tokens only if permissions have actually changed
+                if ($originalPermissions !== $newPermissions) {
+                    $user->tokens()->delete();
+                }
             }
+            
             if ($request->has('roles')) {
+                // Get the original roles as a sorted array of IDs
+                $originalRoles = $user->roles()->pluck('id')->sort()->values()->toArray();
+                // Get the requested roles as a sorted array of IDs
+                $newRoles = collect($request->roles)->sort()->values()->toArray();
+
+                // Sync the new roles
                 $user->roles()->sync($request->roles);
-                $user->tokens()->delete();
+
+                // Delete tokens only if roles have actually changed
+                if ($originalRoles !== $newRoles) {
+                    $user->tokens()->delete();
+                }
             }
+
             if ($request->has('departments')) {
                 $user->departments()->sync($request->departments);
             }
+
             if ($request->has('warehouses')) {
                 $user->warehouses()->sync($request->warehouses);
             }
+
             DB::commit();
 
             return response()->json($user->load($this->with));
+
         } catch (\Exception $e) {
+
             DB::rollBack();
 
             return response()->json(['message' => $e->getMessage()], 500);
+
         }
     }
 

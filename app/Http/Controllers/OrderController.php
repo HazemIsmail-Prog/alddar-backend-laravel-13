@@ -23,7 +23,7 @@ class OrderController
         'phone',
     ];
 
-    protected array $searchable = ['order_date'];
+    protected array $searchable = ['order_date','order_number'];
 
     public function index(Request $request)
     {

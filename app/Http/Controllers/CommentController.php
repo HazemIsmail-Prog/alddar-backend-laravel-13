@@ -12,7 +12,7 @@ use App\Http\Requests\Comments\StoreCommentRequest;
 class CommentController
 {
 
-    protected array $with = ['creator'];
+    protected array $with = ['creator:id,name_ar,name_en'];
 
     public function index(Request $request)
     {
@@ -43,21 +43,20 @@ class CommentController
 
             if ($request->file('file')) {
                 $file = $request->file('file');
-                $dir = 'comments/'.now()->format('Y/m');
+                $dir = 'voices/';
                 $ext = strtolower((string) $file->getClientOriginalExtension());
                 if ($ext === '' || ! preg_match('/^[a-z0-9]{1,12}$/', $ext)) {
                     $ext = 'webm';
                 }
-                $path = $file->storeAs($dir, 'voice-'.uniqid('', true).'.'.$ext, 'public');
+                $path = $file->storeAs($dir, 'voice-'.now()->format('Ymd-His').'-'.uniqid('', true).'.'.$ext, 'public');
                 $validated['media_path'] = $path;
                 $validated['media_disk'] = 'public';
             }
 
             $comment = Comment::create($validated);
+            broadcast(new CommentCreated($comment->load($this->with)));
 
             DB::commit();
-
-            event(new CommentCreated($comment->load($this->with)));
 
             return response()->json($comment->load($this->with), 201);
 

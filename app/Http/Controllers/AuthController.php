@@ -28,7 +28,11 @@ class AuthController
 
     public function getUser(Request $request)
     {
-        return response()->json($request->user());
+        // clone the user and append the can attribute
+        $user = $request->user()->fresh()->toArray();
+        $can = array_values((array) $request->user()->can);
+        $user['can'] = $can;
+        return response()->json($user);
     }
 
     public function logout(Request $request)
