@@ -18,23 +18,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name_en' => 'Hazem Ismail',
-            'name_ar' => 'حازم اسماعيل',
-            'civil_id' => '282102800373',
-            'password' => Hash::make('282102800373'),
-        ]);
 
-        User::factory()->create([
-            'name_en' => 'Takieldin Samir Mohamed Badrelazab',
-            'name_ar' => 'تقي الدين سمير محمد بدر العزب',
-            'civil_id' => '294031103172',
-            'password' => Hash::make('294031103172'),
-        ]);
-
-        // User::factory(10)->create();
 
         $this->call([
+            UserSeeder::class,
             DepartmentSeeder::class,
             PermissionSeeder::class,
             WarehouseSeeder::class,
