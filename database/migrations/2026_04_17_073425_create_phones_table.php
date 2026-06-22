@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('phones', function (Blueprint $table) {
             $table->id();
             $table->morphs('phoneable');
-            $table->string('label');
+            $table->string('label')->nullable();
             $table->string('country_code');
             $table->string('number');
             $table->string('extension')->nullable();
