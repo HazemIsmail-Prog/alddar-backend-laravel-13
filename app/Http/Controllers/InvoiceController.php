@@ -2,20 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Invoices\StoreInvoiceRequest;
-use App\Http\Requests\Invoices\UpdateInvoiceRequest;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Services\StockMovementService;
-use App\Actions\Stock\UpdateStockLevelAction;
-use App\Actions\Invoices\UpdateInvoicePaidAmountAndPaymentStatusAction;
-use App\Actions\Parties\UpdateBalanceAction;
-use App\Actions\Orders\UpdateOrderPaidAmountAndPaymentStatusAction;
 use App\Events\Invoices\InvoiceCreated;
+use App\Actions\UpdateStockLevelsAction;
+use App\Actions\UpdatePartyBalanceAction;
+use App\Actions\UpdateLeafAccountsBalanceAction;
+use App\Actions\CreateInvoiceStockMovmentsAction;
+use App\Http\Requests\Invoices\StoreInvoiceRequest;
+use App\Actions\UpdateOrCreateInvoiceJournalAction;
+use App\Http\Requests\Invoices\UpdateInvoiceRequest;
+use App\Actions\UpdateOrderPaidAmountAndPaymentStatusAction;
+use App\Actions\UpdateInvoicePaidAmountAndPaymentStatusAction;
 
 class InvoiceController
 {
+
+    public function __construct(
+        protected UpdateStockLevelsAction $updateStockLevelsAction,
+        protected UpdatePartyBalanceAction $updatePartyBalanceAction,
+        protected UpdateLeafAccountsBalanceAction $updateLeafAccountsBalanceAction,
+        protected CreateInvoiceStockMovmentsAction $createInvoiceStockMovmentsAction,
+        protected UpdateOrCreateInvoiceJournalAction $updateOrCreateInvoiceJournalAction,
+        protected UpdateOrderPaidAmountAndPaymentStatusAction $updateOrderPaidAmountAndPaymentStatusAction,
+        protected UpdateInvoicePaidAmountAndPaymentStatusAction $updateInvoicePaidAmountAndPaymentStatusAction,
+    ) {}
+
     protected array $with = ['party', 'items', 'reference'];
 
     protected array $searchable = ['invoice_number', 'invoice_date', 'status'];
@@ -53,146 +66,126 @@ class InvoiceController
 
     public function store(StoreInvoiceRequest $request)
     {
+        
+        if(!request()->user()->hasPermission('invoices_create')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لإنشاء الفاتورة', 
+                    'en' => 'You do not have permission to create an invoice'
+                ],
+            ], 403);
+        }
+
         $safe = $request->safe();
         $invoiceData = $safe->except('items');
         $itemsData = $safe->input('items', []);
 
+        
         DB::beginTransaction();
+        
         try {
-
-            // create invoice
+            
             $invoice = Invoice::create($invoiceData);
 
-            // paid amount and payment status already updated in the StoreInvoiceRequest
-
-            // update order paid amount and payment status
             if($invoice->reference_type === 'order') {
-                (new UpdateOrderPaidAmountAndPaymentStatusAction())->handle($invoice->reference);
+                $order = $invoice->reference;
+                $this->updateOrderPaidAmountAndPaymentStatusAction->handle($order);
             }
-
-            // update party balance
-            (new UpdateBalanceAction())->handle($invoice->party);
-
-            // create invoice items
+            
+            $this->updatePartyBalanceAction->handle($invoice->party);
+            
             $invoice->syncMany('items', $itemsData);
 
+            $this->createInvoiceStockMovmentsAction->handle($invoice);
 
-            // get the invoice items
-            $invoiceItems = $invoice->items->toArray();
+            $this->updateStockLevelsAction->handle();
 
-            // create stock movements for the invoice items where has warehouse id and product id
-            $movement_type = match ($invoice->invoice_type) {
-                'purchase' => 'in',
-                'sales' => 'out',
-                'credit_note' => 'out',
-                'debit_note' => 'in',
-                default => throw new \Exception('Invalid invoice type'),
-            };
+            $this->updateOrCreateInvoiceJournalAction->handle($invoice);
 
-            $transaction_type = match ($invoice->invoice_type) {
-                'purchase' => 'purchase',
-                'sales' => 'sale',
-                'credit_note' => 'return',
-                'debit_note' => 'return',
-                default => throw new \Exception('Invalid invoice type'),
-            };
+            $this->updateLeafAccountsBalanceAction->handle();
 
-            $stockMovementsData = StockMovementService::getInvoiceStockMovementsData($invoiceItems, $movement_type, $transaction_type);
-
-            if (!empty($stockMovementsData)) {
-
-                $invoice->stockMovements()->createMany($stockMovementsData);
-                (new UpdateStockLevelAction())->handle();
-
-            }
-
-            // create journal for the invoice
-            // create journal entries for the invoice
             DB::commit();
+
             event(new InvoiceCreated($invoice));
+
             return response()->json($invoice->load($this->with));
+
         } catch (\Exception $e) {
+
             DB::rollBack();
+
             return response()->json(['message' => $e->getMessage()], 500);
+
         }
 
     }
 
-    public function update(UpdateInvoiceRequest $request, Invoice $invoice)
+    public function update(Invoice $invoice, UpdateInvoiceRequest $request)
     {
+
+        if(!request()->user()->hasPermission('invoices_update')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لتحديث الفاتورة', 
+                    'en' => 'You do not have permission to update the invoice'
+                ],
+            ], 403);
+        }
 
         $safe = $request->safe();
         $invoiceData = $safe->except('items');
         $itemsData = $safe->input('items', []);
 
-        // return response()->json($invoiceData);
-
         DB::beginTransaction();
-        try {
 
-            // get the old total amount
-            $oldTotalAmount = $invoice->total_amount;
+        try {
 
             $invoice->update($invoiceData);
 
-            // update paid amount and balance
-            (new UpdateInvoicePaidAmountAndPaymentStatusAction())->handle($invoice);
+            $this->updateInvoicePaidAmountAndPaymentStatusAction->handle($invoice);
 
-            // update order paid amount and payment status
             if($invoice->reference_type === 'order') {
-                (new UpdateOrderPaidAmountAndPaymentStatusAction())->handle($invoice->reference);
+                $order = $invoice->reference;
+                $this->updateOrderPaidAmountAndPaymentStatusAction->handle($order);
             }
 
-            // update party balance
-            (new UpdateBalanceAction())->handle($invoice->party);
+            $this->updatePartyBalanceAction->handle($invoice->party);
 
-            // update invoice items
             $invoice->syncMany('items', $itemsData);
 
-            // get the invoice items
-            $invoiceItems = $invoice->items->toArray();
+            $this->createInvoiceStockMovmentsAction->handle($invoice);
 
+            $this->updateStockLevelsAction->handle();
 
-            // create stock movements for the invoice items where has warehouse id and product id
-            $movement_type = match ($invoice->invoice_type) {
-                'purchase' => 'in',
-                'sales' => 'out',
-                'credit_note' => 'out',
-                'debit_note' => 'in',
-                default => throw new \Exception('Invalid invoice type'),
-            };
+            $this->updateOrCreateInvoiceJournalAction->handle($invoice);
 
-            $transaction_type = match ($invoice->invoice_type) {
-                'purchase' => 'purchase',
-                'sales' => 'sale',
-                'credit_note' => 'return',
-                'debit_note' => 'return',
-                default => throw new \Exception('Invalid invoice type'),
-            };
-
-            $invoice->stockMovements()->delete();
-
-            $stockMovementsData = StockMovementService::getInvoiceStockMovementsData($invoiceItems, $movement_type, $transaction_type);
-
-            if (!empty($stockMovementsData)) {
-
-                $invoice->stockMovements()->createMany($stockMovementsData);
-                (new UpdateStockLevelAction())->handle();
-
-            }
+            $this->updateLeafAccountsBalanceAction->handle();
 
             DB::commit();
+
             return response()->json($invoice->load($this->with));
+
         } catch (\Exception $e) {
+
             DB::rollBack();
+
             return response()->json(['message' => $e->getMessage()], 500);
+
         }
 
     }
 
     public function destroy(Invoice $invoice)
     {
-        // $action->handle($invoice);
+        
+        if(!request()->user()->hasPermission('invoices_delete')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لحذف الفاتورة', 
+                    'en' => 'You do not have permission to delete the invoice'
+                ],
+            ], 403);
+        }
 
         return response()->json(['message' => 'Invoice deleted successfully']);
     }

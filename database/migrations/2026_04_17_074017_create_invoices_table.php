@@ -16,10 +16,10 @@ return new class extends Migration
             $table->foreignId('created_by')->constrained('users');
             $table->string('invoice_number')->unique();
             $table->nullableMorphs('reference'); // polymorphic: purchase_orders, sales_orders, stock_transfers, adjustments
-            $table->enum('invoice_type', ['sales', 'purchase', 'credit_note', 'debit_note']);
+            $table->string('invoice_type'); // sales, purchase, credit_note, debit_note
             $table->foreignId('party_id')->constrained('parties');
             $table->date('invoice_date');
-            $table->enum('status', ['draft', 'sent', 'approved', 'partially_paid', 'paid', 'overdue', 'cancelled'])->default('draft');
+            $table->string('status'); // draft, sent, approved, partially_paid, paid, overdue, cancelled
             $table->integer('subtotal')->default(0); // in cents
             $table->integer('discount_amount')->default(0); // in cents
             $table->integer('total_amount')->default(0); // in cents

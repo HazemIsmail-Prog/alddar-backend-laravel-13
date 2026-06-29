@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             WarehouseSeeder::class,
             CategorySeeder::class,
             // ProductSeeder::class,
-            // PartySeeder::class,
+            PartySeeder::class,
             OrderStatusSeeder::class,
             ChartOfAccountSeeder::class,
         ]);

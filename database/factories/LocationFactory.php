@@ -28,11 +28,11 @@ class LocationFactory extends Factory
             'city' => fake()->randomElement(['العاصمة', 'الفروانية', 'الأحمدي', 'الجهراء', 'مبارك الكبير', 'حولي']),
             'area' => fake()->randomElement(['السالمية', 'حولي', 'الفروانية']),
             'block' => fake()->numberBetween(1, 10),
-            'street' => fake()->streetName(),
+            // 'street' => fake()->streetName(),
             'avenue' => fake()->numberBetween(1, 10),
-            'building' => fake()->buildingNumber(),
+            'building' => fake()->numberBetween(1, 200),
             'floor' => fake()->numberBetween(1, 10),
-            'notes' => fake()->sentence(),
+            // 'notes' => fake()->sentence(),
         ];
     }
 }

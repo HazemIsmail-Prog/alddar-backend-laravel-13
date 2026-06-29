@@ -68,15 +68,16 @@ class Order extends Model
         return $this->morphMany(Invoice::class, 'reference');
     }
 
+    public function dispatchingHistories()
+    {
+        return $this->hasMany(DispatchingHistory::class);
+    }
+
     public function getIsUnInvoicedCompletedOrdersAttribute()
     {
         return $this->status_id === 6 && $this->invoices->isEmpty();
     }
 
-    public function dispatchingHistories()
-    {
-        return $this->hasMany(DispatchingHistory::class);
-    }
 
     // public function journals()
     // {

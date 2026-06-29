@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Actions\Parties;
+namespace App\Actions;
 
 use App\Models\Party;
 
-final class UpdateBalanceAction
+class UpdatePartyBalanceAction
 {
 
     public function handle(Party $party): void

@@ -16,8 +16,8 @@ class PartySeeder extends Seeder
 
 
         $parties = Party::factory(10)
-            ->has(Phone::factory()->count(2))
-            ->has(Location::factory()->count(2))
+            ->has(Phone::factory()->count(1))
+            ->has(Location::factory()->count(1))
             ->create();
 
     }

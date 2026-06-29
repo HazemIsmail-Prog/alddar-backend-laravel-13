@@ -27,7 +27,7 @@ class PhoneFactory extends Factory
             'country_code' => '+965',
             'number' => fake()->randomNumber(8),
             'extension' => '',
-            'notes' => fake()->sentence(),
+            // 'notes' => fake()->sentence(),
         ];
     }
 }

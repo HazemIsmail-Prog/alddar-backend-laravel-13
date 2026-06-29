@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Products\UpdateProductRequest;
 use App\Http\Requests\Products\StoreProductRequest;
 use App\Models\Warehouse;
-use App\Actions\Stock\UpdateStockLevelAction;
+use App\Actions\UpdateStockLevelsAction;
 
 class ProductController
 {
@@ -48,6 +48,11 @@ class ProductController
         ]);
     }
 
+    public function show(Product $product)
+    {
+        return response()->json($product->load($this->with));
+    }
+
     public function store(StoreProductRequest $request)
     {
 
@@ -66,7 +71,7 @@ class ProductController
                 'transaction_type' => 'opening_stock',
             ]);
 
-            (new UpdateStockLevelAction())->handle();
+            (new UpdateStockLevelsAction())->handle();
             DB::commit();
             return response()->json($product->load($this->with));
         } catch (\Exception $e) {
@@ -101,7 +106,7 @@ class ProductController
                 'updated_at' => now(),
             ]);
             // update stock level
-            (new UpdateStockLevelAction())->handle();
+            (new UpdateStockLevelsAction())->handle();
             DB::commit();
             return response()->json($product->load($this->with));
         } catch (\Exception $e) {

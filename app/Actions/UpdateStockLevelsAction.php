@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Actions\Stock;
+namespace App\Actions;
 
 use App\Models\StockLevel;
 use App\Models\StockMovement;
 
-final class UpdateStockLevelAction
+class UpdateStockLevelsAction
 {
 
     public function handle(): void

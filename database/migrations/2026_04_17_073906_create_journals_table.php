@@ -25,14 +25,15 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('total_debit')->default(0); // in cents
             $table->integer('total_credit')->default(0); // in cents
-            $table->enum('status', ['draft', 'posted', 'cancelled'])->default('draft');
             $table->nullableMorphs('reference'); // polymorphic: invoices, purchase_orders, sales_orders, etc.
-            $table->timestamp('posted_at')->nullable();
             $table->timestamps();
             
-            $table->index(['journal_number', 'status']);
+            $table->index(['journal_number']);
             $table->index(['journal_type', 'journal_date']);
-            $table->index('status');
+            
+            // $table->index('status');
+            // $table->enum('status', ['draft', 'posted', 'cancelled'])->default('draft');
+            // $table->timestamp('posted_at')->nullable();
             // $table->string('currency', 3)->default('USD');
             // $table->integer('exchange_rate')->default(10000); // in basis points
         });

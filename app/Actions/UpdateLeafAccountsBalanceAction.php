@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\ChartOfAccounts;
+namespace App\Actions;
 
 use App\Models\ChartOfAccount;
 use App\Models\JournalEntry;

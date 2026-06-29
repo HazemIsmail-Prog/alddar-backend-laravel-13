@@ -746,6 +746,20 @@ class ChartOfAccountSeeder extends Seeder
             'created_by' => 1,
         ]);
 
+        ChartOfAccount::create([
+            'account_code' => '6120',
+            'account_name' => 'Purchases Discounts',
+            'account_type' => 'expense',
+            'normal_balance' => 'debit',
+            'parent_id' => $expenses->id,
+            'level' => 1,
+            'is_leaf' => true,
+            'is_system_account' => true,
+            'is_active' => true,
+            'description' => 'Discounts received on purchases',
+            'created_by' => 1,
+        ]);
+
         // Labor Expenses
         ChartOfAccount::create([
             'account_code' => '6200',

@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Journals\StoreJournalRequest;
 use App\Http\Requests\Journals\UpdateJournalRequest;
-use App\Actions\ChartOfAccounts\UpdateLeafAccountsBalanceAction;
+use App\Actions\UpdateLeafAccountsBalanceAction;
 
 class JournalController
 {
@@ -55,6 +55,15 @@ class JournalController
     public function store(StoreJournalRequest $request)
     {
 
+        if(!request()->user()->hasPermission('journals_create')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لإنشاء اليومية', 
+                    'en' => 'You do not have permission to create the journal'
+                ],
+            ], 403);
+        }
+
         $safe = $request->safe();
         $validatedJournalData = $safe->except('entries');
         $validatedEntriesData = $safe->input('entries', []);
@@ -75,6 +84,24 @@ class JournalController
 
     public function update(UpdateJournalRequest $request, Journal $journal)
     {
+        if(!request()->user()->hasPermission('journals_update')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لتحديث اليومية', 
+                    'en' => 'You do not have permission to update the journal'
+                ],
+            ], 403);
+        }
+
+        if($journal->reference_type) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'هذا القيد منشأ من قبل نظام النظام, لا يمكن تحديثه', 
+                    'en' => 'This journal is created by the system, you cannot update it'
+                ],
+            ], 403);
+        }
+
         $safe = $request->safe();
         $validatedJournalData = $safe->except('entries');
         $validatedEntriesData = $safe->input('entries', []);
@@ -94,6 +121,25 @@ class JournalController
 
     public function destroy(Journal $journal)
     {
+        if(!request()->user()->hasPermission('journals_delete')) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لحذف اليومية', 
+                    'en' => 'You do not have permission to delete the journal'
+                ],
+            ], 403);
+        }
+
+        if($journal->reference_type) {
+            return response()->json([
+                'message' => [
+                    'ar' =>'هذا القيد منشأ من قبل نظام النظام, لا يمكن حذفه', 
+                    'en' => 'This journal is created by the system, you cannot delete it'
+                ],
+            ], 403);
+        }
+
+
         DB::beginTransaction();
         try {
             $journal->entries()->delete();

@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Payment;
 use App\Http\Requests\Payments\StorePaymentRequest;
-use App\Actions\Invoices\UpdateInvoicePaidAmountAndPaymentStatusAction;
-use App\Actions\Parties\UpdateBalanceAction;
+use App\Actions\UpdateInvoicePaidAmountAndPaymentStatusAction;
+use App\Actions\UpdatePartyBalanceAction;
 use Illuminate\Support\Facades\DB;
-use App\Actions\Orders\UpdateOrderPaidAmountAndPaymentStatusAction;
+use App\Actions\UpdateOrderPaidAmountAndPaymentStatusAction;
 
 class PaymentController extends Controller
 {
@@ -45,7 +45,7 @@ class PaymentController extends Controller
             }
 
             // update party balance
-            (new UpdateBalanceAction())->handle($payment->party);
+            (new UpdatePartyBalanceAction())->handle($payment->party);
             DB::commit();
             return response()->json($payment);
         } catch (\Exception $e) {

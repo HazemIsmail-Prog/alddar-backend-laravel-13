@@ -6,7 +6,7 @@ use App\Models\StockTransfer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\StockMovementService;
-use App\Actions\Stock\UpdateStockLevelAction;
+use App\Actions\UpdateStockLevelsAction;
 use App\Http\Requests\StockTransferes\StoreStockTransferRequest;
 use App\Http\Requests\StockTransferes\UpdateStockTransferRequest;
 
@@ -62,7 +62,7 @@ class StockTransferController
             if (!empty($stockMovementsData)) {
     
                 $transfer->stockMovements()->createMany($stockMovementsData);
-                (new UpdateStockLevelAction())->handle();
+                (new UpdateStockLevelsAction())->handle();
     
             }
 
@@ -104,7 +104,7 @@ class StockTransferController
                     $stockTransfer->stockMovements()->create($stockMovement);
                 }
     
-                (new UpdateStockLevelAction())->handle();
+                (new UpdateStockLevelsAction())->handle();
     
             }
             DB::commit();
@@ -122,7 +122,7 @@ class StockTransferController
             $stockTransfer->stockMovements()->delete();
             $stockTransfer->items()->delete();
             $stockTransfer->delete();
-            (new UpdateStockLevelAction())->handle();
+            (new UpdateStockLevelsAction())->handle();
             DB::commit();
             return response()->noContent();
         } catch (\Exception $e) {

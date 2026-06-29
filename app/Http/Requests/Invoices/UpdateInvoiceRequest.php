@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Invoices;
 
+use App\Enums\InvoiceType;
+use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\StockLevel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class UpdateInvoiceRequest extends FormRequest
 {
@@ -57,6 +60,7 @@ class UpdateInvoiceRequest extends FormRequest
                     'unit_price' => $item['unit_price'],
                     'discount_amount' => $item['discount_amount'],
                     'total_price' => $item['unit_price'] * $item['quantity'] - $item['discount_amount'],
+                    'account_id' => $item['account_id'],
                 ];
             }
         }
@@ -69,7 +73,7 @@ class UpdateInvoiceRequest extends FormRequest
         $invoice_discount_amount = $this->input('discount_amount');
         $invoice_total_amount = $invoice_subtotal - $invoice_discount_amount;
         $invoice_amount_paid = 0;
-        $invoice_status = 'draft';
+        $invoice_status = InvoiceStatus::DRAFT->value;
 
         $this->merge([
             'items' => $itemsData,
@@ -87,10 +91,10 @@ class UpdateInvoiceRequest extends FormRequest
             'invoice_number' => 'required|string|max:64',
             'reference_id' => 'nullable|numeric',
             'reference_type' => 'nullable|string',
-            'invoice_type' => 'required|string|max:255|in:sales,purchase,credit_note,debit_note',
+            'invoice_type' => ['required', 'string', 'max:255', Rule::in(InvoiceType::values())],
             'party_id' => 'required|exists:parties,id',
             'invoice_date' => 'required|date',
-            'status' => 'required|string|max:255|in:draft,sent,approved,partially_paid,paid,overdue,cancelled',
+            'status' => ['required', 'string', 'max:255', Rule::in(InvoiceStatus::values())],
             'subtotal' => 'required|numeric|min:0',
             'discount_amount' => 'required|numeric|min:0',
             'total_amount' => 'required|numeric|min:0.001',
@@ -102,6 +106,7 @@ class UpdateInvoiceRequest extends FormRequest
             'items.*.id' => 'nullable|exists:invoice_items,id',
             'items.*.product_id' => 'nullable|required_if:items.*.description,null|exists:products,id',
             'items.*.warehouse_id' => 'nullable|required_unless:items.*.product_id,null|prohibited_if:items.*.product_id,null|exists:warehouses,id',
+            'items.*.account_id' => 'required|exists:chart_of_accounts,id,is_leaf,1',
             'items.*.description' => 'nullable|required_if:items.*.product_id,null|string|max:255',
             'items.*.quantity' => 'required|numeric|min:0.0001',
             'items.*.unit_price' => 'required|numeric|min:0',

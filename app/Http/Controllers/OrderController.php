@@ -15,6 +15,8 @@ class OrderController
 {
     protected array $with = [
         'items',
+        'dispatchingHistories',
+        'invoices',
         'party',
         'department',
         'technician',
@@ -142,6 +144,8 @@ class OrderController
         DB::beginTransaction();
         try {
             $order->items()->delete();
+            $order->invoices()->delete();
+            $order->dispatchingHistories()->delete();
             $order->delete();
             DB::commit();
             broadcast(new OrderDeleted($order->load($this->with)));

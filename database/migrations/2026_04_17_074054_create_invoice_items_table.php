@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('invoice_id')->constrained();
             $table->foreignId('product_id')->nullable()->constrained();
             $table->foreignId('warehouse_id')->nullable()->constrained();
+            $table->foreignId('account_id')->constrained('chart_of_accounts');
             $table->string('description')->nullable();
             $table->decimal('quantity', 10, 2);
             $table->integer('unit_price'); // in cents

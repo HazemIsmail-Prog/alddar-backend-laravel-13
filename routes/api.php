@@ -44,14 +44,15 @@ Route::group([
     Route::apiResource('roles', RoleController::class)->except(['show']);
     Route::apiResource('warehouses', WarehouseController::class)->except(['show']);
     Route::apiResource('categories', CategoryController::class)->except(['show']);
-    Route::apiResource('products', ProductController::class)->except(['show']);
+    Route::apiResource('products', ProductController::class);
     Route::apiResource('parties', PartyController::class)->except(['show']);
     Route::apiResource('orders', OrderController::class);
     Route::apiResource('dispatching-histories/{order}', DispatchingHistoryController::class)->only(['index']);
     Route::apiResource('order-statuses', OrderStatusController::class)->except(['show']);
     Route::apiResource('invoices', InvoiceController::class);
     Route::apiResource('stock-movements', StockMovementController::class)->except(['show']);
-    Route::apiResource('stock-levels', StockLevelController::class)->except(['show']);
+    Route::apiResource('stock-levels', StockLevelController::class)->only(['index']);
+    Route::get('stock-levels/{product}/{warehouse}', [StockLevelController::class, 'getStockLevel']);
     Route::apiResource('stock-transfers', StockTransferController::class)->except(['show']);
     Route::apiResource('stock-adjustments', StockAdjustmentController::class)->except(['show']);
     Route::apiResource('chart-of-accounts', ChartOfAccountController::class)->except(['show']);

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Actions\Orders;
+namespace App\Actions;
 
 use App\Models\Order;
 
-final class UpdateOrderPaidAmountAndPaymentStatusAction
+class UpdateOrderPaidAmountAndPaymentStatusAction
 {
 
     public function handle(Order $order): void

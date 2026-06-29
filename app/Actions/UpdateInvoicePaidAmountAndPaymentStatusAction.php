@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Actions\Invoices;
+namespace App\Actions;
 
 use App\Models\Invoice;
 
-final class UpdateInvoicePaidAmountAndPaymentStatusAction
+class UpdateInvoicePaidAmountAndPaymentStatusAction
 {
 
     public function handle(Invoice $invoice): void
