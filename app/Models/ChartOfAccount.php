@@ -12,6 +12,18 @@ class ChartOfAccount extends Model
 
     protected $guarded = [];
 
+    protected $appends = ['can_update', 'can_delete'];
+
+    public function getCanUpdateAttribute()
+    {
+        return request()->user()->hasPermission('chart_of_accounts_update');
+    }
+
+    public function getCanDeleteAttribute()
+    {
+        return request()->user()->hasPermission('chart_of_accounts_delete');
+    }
+
     protected $casts = [
         'level' => 'integer',
         'is_leaf' => 'boolean',
