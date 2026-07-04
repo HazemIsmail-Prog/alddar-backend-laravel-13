@@ -58,7 +58,7 @@ Route::group([
     Route::apiResource('chart-of-accounts', ChartOfAccountController::class)->except(['show']);
     Route::apiResource('journals', JournalController::class);
     Route::apiResource('payments', PaymentController::class);
-    Route::apiResource('comments', CommentController::class)->only(['index','store']);
+    Route::apiResource('comments', CommentController::class)->only(['index','store','show']);
     Route::apiResource('attachments', AttachmentController::class)->only(['index','store','destroy']);
 
 

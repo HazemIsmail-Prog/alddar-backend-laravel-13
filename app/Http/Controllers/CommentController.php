@@ -72,4 +72,20 @@ class CommentController
         }
     }
 
+    public function show(Comment $comment)
+    {
+
+        // Return the webm file if present, otherwise 404
+        if ($comment->media_disk === 'public' && $comment->media_path && Storage::disk('public')->exists($comment->media_path)) {
+            return response()->file(
+                Storage::disk('public')->path($comment->media_path),
+                [
+                    'Content-Type' => 'audio/webm',
+                    'Content-Disposition' => 'inline; filename="' . basename($comment->media_path) . '.webm"',
+                ]
+            );
+        }
+        abort(404, 'Media file not found.');
+
+    }
 }
