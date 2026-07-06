@@ -13,13 +13,13 @@ class OrderStatusSeeder extends Seeder
     public function run(): void
     {
         $statuses = [
-            ['id' => 1, 'name' => 'غير معين', 'color' => '#3b82f6'],
-            ['id' => 2, 'name' => 'متوقف مؤقتا', 'color' => '#f59e0b'],
-            ['id' => 3, 'name' => 'معين', 'color' => '#8b5cf6'],
-            ['id' => 4, 'name' => 'مستلم', 'color' => '#06b6d4'],
-            ['id' => 5, 'name' => 'وصول', 'color' => '#10b981'],
-            ['id' => 6, 'name' => 'منفذ', 'color' => '#22c55e'],
-            ['id' => 7, 'name' => 'ملغي', 'color' => '#ef4444'],
+            ['id' => 1, 'name' => 'غير معين', 'color' => '#3399ff'],
+            ['id' => 2, 'name' => 'متوقف مؤقتا', 'color' => '#636f83'],
+            ['id' => 3, 'name' => 'معين', 'color' => '#9b082d'],
+            ['id' => 4, 'name' => 'مستلم', 'color' => '#d6b300'],
+            ['id' => 5, 'name' => 'وصول', 'color' => '#e356e6'],
+            ['id' => 6, 'name' => 'منفذ', 'color' => '#2eb85c'],
+            ['id' => 7, 'name' => 'ملغي', 'color' => '#e55353'],
         ];
 
         OrderStatus::insert($statuses);
