@@ -12,9 +12,7 @@ class Order extends Model
 
     protected $guarded = [];
 
-    protected $appends = [
-        'is_un_invoiced_completed_orders',
-    ];
+
 
     protected $casts = [
         'is_confirmed_to_dispatch' => 'boolean',
@@ -73,9 +71,25 @@ class Order extends Model
         return $this->hasMany(DispatchingHistory::class);
     }
 
+    protected $appends = [
+        'is_un_invoiced_completed_orders',
+        'can_update',
+        'can_delete',
+    ];
+
     public function getIsUnInvoicedCompletedOrdersAttribute()
     {
         return $this->status_id === 6 && $this->invoices->isEmpty();
+    }
+
+    public function getCanUpdateAttribute()
+    {
+        return request()->user()->hasPermission('sales_orders_update');
+    }
+
+    public function getCanDeleteAttribute()
+    {
+        return request()->user()->hasPermission('sales_orders_delete');
     }
 
 
