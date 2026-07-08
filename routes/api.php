@@ -26,6 +26,7 @@ use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\CounterController;
 use App\Http\Controllers\DispatchingHistoryController;
 use App\Http\Controllers\DropdownListController;
+use App\Http\Controllers\ContractController;
 use Illuminate\Support\Facades\Route;
 
 Route::group([
@@ -60,6 +61,7 @@ Route::group([
     Route::apiResource('payments', PaymentController::class);
     Route::apiResource('comments', CommentController::class)->only(['index','store','show']);
     Route::apiResource('attachments', AttachmentController::class)->only(['index','store','destroy']);
+    Route::apiResource('contracts', ContractController::class);
 
 
     // Financial Reports

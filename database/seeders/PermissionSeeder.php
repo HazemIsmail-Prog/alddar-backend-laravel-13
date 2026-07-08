@@ -394,6 +394,27 @@ class PermissionSeeder extends Seeder
                 'name_en' => 'bank_accounts_delete',
                 'name_ar' => 'حذف الحسابات المالية',
             ],
+
+            [
+                'value' => 'contracts_view',
+                'name_en' => 'contracts_view',
+                'name_ar' => 'عرض العقود',
+            ],
+            [
+                'value' => 'contracts_create',
+                'name_en' => 'contracts_create',
+                'name_ar' => 'إنشاء العقود',
+            ],
+            [
+                'value' => 'contracts_update',
+                'name_en' => 'contracts_update',
+                'name_ar' => 'تحديث العقود',
+            ],
+            [
+                'value' => 'contracts_delete',
+                'name_en' => 'contracts_delete',
+                'name_ar' => 'حذف العقود',
+            ],
         ];
 
 
