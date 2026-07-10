@@ -41,6 +41,11 @@ class DropdownListController extends Controller
         if($request->boolean('is_service_department')) {
             $query->where('is_service_department', true);
         }
+        if($request->boolean('only_allowed')) {
+            $query->whereHas('users', function ($q) {
+                $q->where('users.id', request()->user()->id);
+            });
+        }
         return response()->json($query->get());
     }
 

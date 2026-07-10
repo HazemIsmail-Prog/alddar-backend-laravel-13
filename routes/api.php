@@ -27,6 +27,7 @@ use App\Http\Controllers\CounterController;
 use App\Http\Controllers\DispatchingHistoryController;
 use App\Http\Controllers\DropdownListController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\TechnicianController;
 use Illuminate\Support\Facades\Route;
 
 Route::group([
@@ -78,16 +79,19 @@ Route::group([
     // Dispatching
     Route::controller(DispatchingController::class)->group(function () {
         Route::get('dispatching/{department}', 'index');
-        Route::get('dispatching/technician/orders', 'getTechnicianOrders');
         Route::put('dispatching/{order}/set-holded', 'setOrderHolded');
         Route::put('dispatching/{order}/set-unassigned', 'setOrderUnassigned');
         Route::put('dispatching/{order}/set-cancelled', 'setOrderCancelled');
         Route::put('dispatching/{order}/assign-technician', 'assignTechnician');
-        Route::put('dispatching/{order}/set-received', 'setOrderReceived');
-        Route::put('dispatching/{order}/set-reached', 'setOrderReached');
-        Route::put('dispatching/{order}/set-completed', 'setOrderCompleted');
-        // update order sort number
         Route::put('dispatching/{order}/update-sort-number', 'updateOrderSortNumber');
+    });
+
+    // Technician
+    Route::controller(TechnicianController::class)->group(function () {
+        Route::get('technician/{department}', 'index');
+        Route::put('technician/{department}/{order}/set-received', 'setOrderReceived');
+        Route::put('technician/{department}/{order}/set-reached', 'setOrderReached');
+        Route::put('technician/{department}/{order}/set-completed', 'setOrderCompleted');
     });
 
     // Counters

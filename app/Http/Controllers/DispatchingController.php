@@ -21,42 +21,10 @@ use Illuminate\Support\Facades\DB;
 class DispatchingController
 {
     protected array $with = [
-        'party.locations',
-        'party.phones',
-        'items',
-        'department',
-        'technician',
-        'status',
+        'party',
         'location',
         'phone',
-        'invoices.payments',
     ];
-
-    public function getTechnicianOrders(Request $request)
-    {
-        $request->validate([
-            'department_id' => 'required|exists:departments,id',
-        ]);
-
-        // if auth technician has in progress order, return it
-        if ($request->user()->orders->where('is_inprogress', true)->count() > 0) {
-            return response()->json($request->user()->orders->where('is_inprogress', true)->first()->load($this->with));
-        }
-
-        // return minimum sort number order
-        $minimumSortNumberOrder = Order::query()
-            ->where('department_id', $request->department_id)
-            ->where('technician_id', $request->user()->id)
-            ->whereIn('status_id', [3, 4, 5])
-            ->orderBy('sort_number', 'asc')
-            ->first();
-
-        if (!$minimumSortNumberOrder) {
-            return response()->json(null);
-        }
-
-        return response()->json($minimumSortNumberOrder->load($this->with));
-    }
 
     public function index(Department $department)
     {
@@ -285,97 +253,6 @@ class DispatchingController
             }
             broadcast(new OrderAssigned($order->load($this->with), $oldTechnicianId, $newTechnicianId));
     
-            return response()->json($order->refresh());
-
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
-        }
-
-    }
-
-    public function setOrderReceived(Order $order)
-    {
-        // abort if technician has another inprogress order
-        if ($order->technician->orders->where('is_inprogress', true)->count() > 0) {
-            return response()->json(['message' => 'Technician has another inprogress order'], 400);
-        }
-
-        DB::beginTransaction();
-        try {
-            //update order
-            $order->update([
-                'status_id' => 4,
-                'is_inprogress' => true,
-            ]);
-            
-            // create dispatching history
-            $order->dispatchingHistories()->create();
-
-            DB::commit();
-
-            broadcast(new OrderReceived($order->load($this->with)));
-            return response()->json($order->refresh());
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
-            //throw $th;
-        }
-
-    }
-
-    public function setOrderReached(Order $order)
-    {
-        // abort if technician has another inprogress order
-        if ($order->status_id !== 4 || !$order->is_inprogress) {
-            return response()->json(['message' => 'Order is not received'], 400);
-        }
-
-        DB::beginTransaction();
-        try {
-            //code...
-            $order->update([
-                'status_id' => 5,
-                'is_inprogress' => true,
-            ]);
-            
-            // create dispatching history
-            $order->dispatchingHistories()->create();
-
-            DB::commit();
-
-            broadcast(new OrderReached($order->load($this->with)));
-            return response()->json($order->refresh());
-
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
-        }
-
-
-    }
-
-    public function setOrderCompleted(Order $order)
-    {
-        if ($order->status_id !== 5 || !$order->is_inprogress) {
-            return response()->json(['message' => 'Order is not reached'], 400);
-        }
-
-        DB::beginTransaction();
-        try {
-            //code...
-            $order->update([
-                'status_id' => 6,
-                'sort_number' => 0,
-                'completed_at' => now(),
-                'is_inprogress' => false,
-            ]);
-            $order->dispatchingHistories()->create();
-
-            DB::commit();
-
-            broadcast(new OrderCompleted($order->load($this->with)));
-
             return response()->json($order->refresh());
 
         } catch (\Throwable $th) {

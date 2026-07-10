@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use App\Models\Order;
 use App\Models\Party;
 use App\Models\Invoice;
+use App\Models\Attachment;
+use App\Models\Comment;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
             'order' => Order::class,
             'party' => Party::class,
             'invoice' => Invoice::class,
+            'attachment' => Attachment::class,
+            'comment' => Comment::class,
         ]);
     }
 }

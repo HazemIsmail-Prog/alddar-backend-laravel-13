@@ -66,16 +66,21 @@ class Order extends Model
         return $this->morphMany(Invoice::class, 'reference');
     }
 
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
     public function dispatchingHistories()
     {
         return $this->hasMany(DispatchingHistory::class);
     }
 
-    protected $appends = [
-        'is_un_invoiced_completed_orders',
-        'can_update',
-        'can_delete',
-    ];
+    // protected $appends = [
+    //     'is_un_invoiced_completed_orders',
+    //     'can_update',
+    //     'can_delete',
+    // ];
 
     public function getIsUnInvoicedCompletedOrdersAttribute()
     {
@@ -92,6 +97,10 @@ class Order extends Model
         return request()->user()->hasPermission('sales_orders_delete');
     }
 
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
 
     // public function journals()
     // {
