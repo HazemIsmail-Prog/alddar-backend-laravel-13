@@ -8,10 +8,22 @@ use App\Events\Orders\OrderCompleted;
 use App\Models\Order;
 use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class TechnicianController
 {
+
+    private function loadRelatedData(Model $model)
+    {
+        return $model
+            ->load(['party:id,name', 'location', 'phone'])
+            ->loadCount('invoices')
+            ->loadCount('attachments')
+            ->loadCount(['comments as unread_comments_count' => function ($query) {
+                $query->whereNotIn('id', request()->user()->commentReaders()->pluck('comments.id'));
+            }]);
+    }
 
     public function index(Department $department)
     {
@@ -22,7 +34,7 @@ class TechnicianController
             ->first();
 
         if ($inProgressOrder) {
-            return response()->json($this->orderWithRelatedData($inProgressOrder));
+            return response()->json($this->loadRelatedData($inProgressOrder));
         }
 
         // return minimum sort number order
@@ -34,7 +46,7 @@ class TechnicianController
             ->first();
 
         if ($minimumSortNumberOrder) {
-            return response()->json($this->orderWithRelatedData($minimumSortNumberOrder));
+            return response()->json($this->loadRelatedData($minimumSortNumberOrder));
         }
 
         return response()->noContent();
@@ -62,7 +74,7 @@ class TechnicianController
 
             broadcast(new OrderReceived($order));
 
-            return response()->json($this->orderWithRelatedData($order));
+            return response()->json($this->loadRelatedData($order));
 
         } catch (\Throwable $th) {
 
@@ -95,7 +107,7 @@ class TechnicianController
 
             broadcast(new OrderReached($order));
 
-            return response()->json($this->orderWithRelatedData($order));
+            return response()->json($this->loadRelatedData($order));
 
         } catch (\Throwable $th) {
 
@@ -103,7 +115,6 @@ class TechnicianController
             throw $th;
 
         }
-
 
     }
 
@@ -130,7 +141,7 @@ class TechnicianController
 
             broadcast(new OrderCompleted($order));
 
-            return response()->json($this->orderWithRelatedData($order));
+            return response()->json($this->loadRelatedData($order));
 
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -152,17 +163,6 @@ class TechnicianController
         }
 
         return false;
-    }
-
-    private function orderWithRelatedData(Order $order)
-    {
-        return $order
-            ->load(['party:id,name', 'location', 'phone'])
-            ->loadCount('invoices')
-            ->loadCount('attachments')
-            ->loadCount('comments')
-            // ->append('party_name')
-            ;
     }
 
 }

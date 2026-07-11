@@ -97,4 +97,11 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Warehouse::class, 'user_warehouse');
     }
+
+    public function commentReaders()
+    {
+        return $this->belongsToMany(Comment::class, 'comment_readers', 'user_id', 'comment_id')
+            ->withTimestamps();
+    }
+
 }

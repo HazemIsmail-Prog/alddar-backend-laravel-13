@@ -10,12 +10,25 @@ use App\Events\Parties\PartyDeleted;
 use App\Models\Party;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
 
 class PartyController
 {
     protected array $searchable = ['name'];
 
-    protected array $with = ['locations', 'phones'];
+    private function loadRelatedData(Model $model): Model
+    {
+        return $model
+            ->load('locations')
+            ->load('phones')
+            ->append('can_update')
+            ->append('can_delete')
+            ->append('sales_invoices_count')
+            ->append('purchase_invoices_count')
+            ->append('sales_orders_count')
+            ->append('purchase_orders_count')
+        ;
+    }
 
     public function index(Request $request)
     {
@@ -48,7 +61,6 @@ class PartyController
         }
 
         $query = Party::query()
-            ->with($this->with)
             ->orderBy('id', 'desc');
 
         if($request->has('name')) {
@@ -70,10 +82,10 @@ class PartyController
         $parties = $query->paginate($request->has('per_page') ? $request->integer('per_page') : 15);
 
         return response()->json([
-            'data' => $parties->items(),
+            'data' => collect($parties->items())->map(fn($party) => $this->loadRelatedData($party)),
             'current_page' => $parties->currentPage(),
             'last_page' => $parties->lastPage(),
-            'next_page_url' => $parties->nextPageUrl(),
+            'next_page_url' => $parties->nextPageUrl() ?? null,
             'per_page' => $parties->perPage(),
             'total' => $parties->total(),
             'can_create' => 
@@ -95,8 +107,8 @@ class PartyController
             $party->syncMany('phones', $request->phones);
             DB::commit();
 
-            broadcast(new PartyCreated($party->load($this->with)))->toOthers();
-            return response()->json($party->load($this->with));
+            broadcast(new PartyCreated($this->loadRelatedData($party)))->toOthers();
+            return response()->json($this->loadRelatedData($party));
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -117,8 +129,8 @@ class PartyController
             $party->syncMany('phones', $validated['phones']);
             DB::commit();
 
-            broadcast(new PartyUpdated($party->load($this->with)))->toOthers();
-            return response()->json($party->load($this->with));
+            broadcast(new PartyUpdated($this->loadRelatedData($party)))->toOthers();
+            return response()->json($this->loadRelatedData($party));
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -159,8 +171,8 @@ class PartyController
 
         $party->delete();
         
-        broadcast(new PartyDeleted($party->load($this->with)))->toOthers();
+        broadcast(new PartyDeleted($this->loadRelatedData($party)))->toOthers();
 
-        return response()->json($party);
+        return response()->json($this->loadRelatedData($party));
     }
 }

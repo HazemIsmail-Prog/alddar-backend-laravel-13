@@ -65,6 +65,12 @@ Route::group([
     Route::apiResource('contracts', ContractController::class);
 
 
+    // Comments
+    Route::controller(CommentController::class)->group(function () {
+        Route::post('comments/mark-as-read', 'markAsRead');
+    });
+
+
     // Financial Reports
     Route::controller(FinancialReportController::class)->group(function () {
         Route::get('financial-reports/trial-balance', 'trialBalance');

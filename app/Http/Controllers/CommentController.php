@@ -88,4 +88,37 @@ class CommentController
         abort(404, 'Media file not found.');
 
     }
+
+    public function markAsRead(Request $request)
+    {
+        $validated = $request->validate([
+            'commentable_type' => ['required', 'string'],
+            'commentable_id' => ['required', 'integer'],
+        ]);
+
+        // Resolve FQCN from morph map or fallback to type directly
+        $commentableType = $validated['commentable_type'];
+        $commentableId = $validated['commentable_id'];
+
+        // Handle Laravel morph map (if any)
+        $morphMap = \Illuminate\Database\Eloquent\Relations\Relation::morphMap();
+        $morphClass = $morphMap[$commentableType] ?? $commentableType;
+
+        if (!class_exists($morphClass)) {
+            return response()->json(['message' => "Class $morphClass not found."], 400);
+        }
+
+        // Fetch commentable model
+        $model = $morphClass::find($commentableId);
+        if (!$model) {
+            return response()->json(['message' => "Resource not found."], 404);
+        }
+
+        // Get unread comments for this user on the given resource
+        $readCommentIds = request()->user()->commentReaders()->pluck('comments.id');
+        $comments = $model->comments()->whereNotIn('id', $readCommentIds)->pluck('id');
+        request()->user()->commentReaders()->syncWithoutDetaching($comments);
+
+        return response()->json(['message' => 'Comments marked as read'], 200);
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,6 +43,12 @@ class Comment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function readers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'comment_readers', 'comment_id', 'user_id')
+            ->withTimestamps();
     }
 
     protected $appends = ['media_url'];
