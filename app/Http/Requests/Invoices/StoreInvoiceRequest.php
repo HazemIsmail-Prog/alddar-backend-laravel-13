@@ -16,7 +16,7 @@ class StoreInvoiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return request()->user()->hasPermission('invoices_create');
+        return true;
     }
 
     protected function prepareForValidation(): void
@@ -89,8 +89,8 @@ class StoreInvoiceRequest extends FormRequest
     {
         return [
             'invoice_number' => 'required|string|max:64',
-            'reference_id' => 'nullable|numeric',
-            'reference_type' => 'nullable|string',
+            'reference_id' => 'required|numeric',
+            'reference_type' => 'required|string',
             'invoice_type' => ['required', 'string', 'max:255', Rule::in(InvoiceType::values())],
             'party_id' => 'required|exists:parties,id',
             'invoice_date' => 'required|date',

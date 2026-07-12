@@ -12,7 +12,7 @@ class ChartOfAccount extends Model
 
     protected $guarded = [];
 
-    protected $appends = ['can_update', 'can_delete'];
+    // protected $appends = ['can_update', 'can_delete'];
 
     public function getCanUpdateAttribute()
     {
