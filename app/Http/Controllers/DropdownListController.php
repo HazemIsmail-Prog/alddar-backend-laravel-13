@@ -87,6 +87,14 @@ class DropdownListController extends Controller
         if($request->boolean('is_active')) {
             $query->where('is_active', true);
         }
+        if($request->filled('department_id')) {
+            $query->whereHas('departments', function ($q) use ($request) {
+                $q->where('departments.id', $request->department_id);
+            });
+        }
+        if($request->boolean('is_technician')) {
+            $query->where('is_technician', true);
+        }
         return response()->json($query->get());
     }
 

@@ -11,9 +11,10 @@ class DispatchingHistory extends Model
     protected static function booted()
     {
         static::creating(function ($dispatchingHistory) {
+            $technicianId = $dispatchingHistory->order->status_id === 1 ? null : $dispatchingHistory->order->technician_id;
             $dispatchingHistory->created_by = request()->user()->id;
             $dispatchingHistory->status_id = $dispatchingHistory->order->status_id;
-            $dispatchingHistory->technician_id = $dispatchingHistory->order->technician_id;
+            $dispatchingHistory->technician_id = $technicianId;
         });
     }
 

@@ -9,6 +9,7 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Http\Requests\Orders\StoreOrderRequest;
 use App\Http\Requests\Orders\UpdateOrderRequest;
+use App\Events\Orders\OrderAssigned;
 use Illuminate\Support\Facades\DB;
 
 class OrderController
@@ -100,6 +101,24 @@ class OrderController
     public function store(StoreOrderRequest $request)
     {
 
+        if (request()->user()->hasPermission('sales_orders_create') && $request->boolean('order_type') === 'sales') {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لإنشاء طلب مبيعات', 
+                    'en' => 'You do not have permission to create sales orders'
+                ],
+            ], 403);
+        }
+
+        if (request()->user()->hasPermission('purchase_orders_create') && $request->boolean('order_type') === 'purchase') {
+            return response()->json([
+                'message' => [
+                    'ar' =>'ليس لديك صلاحية لإنشاء طلب شراء', 
+                    'en' => 'You do not have permission to create purchase orders'
+                ],
+            ], 403);
+        }
+
         $safe = $request->safe();
         $orderData = $safe->except('items');
         $itemsData = $safe->input('items', []);
@@ -111,8 +130,22 @@ class OrderController
                 $order->syncMany('items', $itemsData);
             }
             $order->dispatchingHistories()->create();
+
+            if ($order->technician_id) {
+                $maxSortNumber = Order::where('department_id', $order->department_id)->where('status_id', 3)->where('technician_id', $order->technician_id)->max('sort_number');
+                if ($maxSortNumber) {
+                    $sortNumber = $maxSortNumber + 10;
+                } else {
+                    $sortNumber = 0;
+                }
+                $order->update(['status_id' => 3, 'sort_number' => $sortNumber]);
+                $order->dispatchingHistories()->create();
+            }
             DB::commit();
             broadcast(new OrderCreated($order->load($this->with)));
+            if ($order->technician_id && $order->sort_number === 0) {
+                broadcast(new OrderAssigned($order->load($this->with), null, $order->technician_id));
+                }
             return response()->json($order->load($this->with));
         } catch (\Exception $e) {
             DB::rollBack();
