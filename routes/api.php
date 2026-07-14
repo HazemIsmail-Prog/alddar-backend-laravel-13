@@ -65,6 +65,12 @@ Route::group([
     Route::apiResource('contracts', ContractController::class);
 
 
+    // Invoices
+    Route::controller(InvoiceController::class)->group(function () {
+        Route::post('invoices/{invoice}/post', 'postInvoice');
+    });
+
+
     // Comments
     Route::controller(CommentController::class)->group(function () {
         Route::post('comments/mark-as-read', 'markAsRead');

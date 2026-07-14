@@ -100,10 +100,6 @@ class InvoiceController
 
             $this->updateStockLevelsAction->handle();
 
-            $this->updateOrCreateInvoiceJournalAction->handle($invoice);
-
-            $this->updateLeafAccountsBalanceAction->handle();
-
             DB::commit();
 
             event(new InvoiceCreated($invoice));
@@ -157,10 +153,14 @@ class InvoiceController
 
             $this->updateStockLevelsAction->handle();
 
-            $this->updateOrCreateInvoiceJournalAction->handle($invoice);
+            if($invoice->status === 'posted') {
 
-            $this->updateLeafAccountsBalanceAction->handle();
+                $this->updateOrCreateInvoiceJournalAction->handle($invoice);
 
+                $this->updateLeafAccountsBalanceAction->handle();
+
+            }
+            
             DB::commit();
 
             return response()->json($invoice->load($this->with));
@@ -188,6 +188,33 @@ class InvoiceController
         }
 
         return response()->json(['message' => 'Invoice deleted successfully']);
+    }
+
+
+    public function postInvoice(Invoice $invoice)
+    {
+
+        DB::beginTransaction();
+
+        try {
+
+            $invoice->update(['status' => 'posted']);
+        
+            $this->updateOrCreateInvoiceJournalAction->handle($invoice);
+        
+            $this->updateLeafAccountsBalanceAction->handle();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Invoice posted successfully']);
+            
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json(['message' => $e->getMessage()], 500);
+
+        }
     }
 
     
