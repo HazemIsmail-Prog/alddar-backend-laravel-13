@@ -48,9 +48,9 @@ class CommentController
                 if ($ext === '' || ! preg_match('/^[a-z0-9]{1,12}$/', $ext)) {
                     $ext = 'webm';
                 }
-                $path = $file->storeAs($dir, 'voice-'.now()->format('Ymd-His').'-'.uniqid('', true).'.'.$ext, 'public');
+                $path = $file->storeAs($dir, 'voice-'.now()->format('Ymd-His').'-'.uniqid('', true).'.'.$ext, 's3');
                 $validated['media_path'] = $path;
-                $validated['media_disk'] = 'public';
+                $validated['media_disk'] = 's3';
             }
 
             $comment = Comment::create($validated);
@@ -64,8 +64,8 @@ class CommentController
 
             DB::rollBack();
 
-            if ($path && Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
+            if ($path && Storage::disk('s3')->exists($path)) {
+                Storage::disk('s3')->delete($path);
             }
 
             return response()->json(['message' => $e->getMessage()], 500);
@@ -74,18 +74,15 @@ class CommentController
 
     public function show(Comment $comment)
     {
-
-        // Return the webm file if present, otherwise 404
-        if ($comment->media_disk === 'public' && $comment->media_path && Storage::disk('public')->exists($comment->media_path)) {
-            return response()->file(
-                Storage::disk('public')->path($comment->media_path),
-                [
-                    'Content-Type' => 'audio/webm',
-                    'Content-Disposition' => 'inline; filename="' . basename($comment->media_path) . '.webm"',
-                ]
-            );
+        // wanna return the file it self not the url
+        $file = Storage::disk('s3')->get($comment->media_path);
+        if (!$file) {
+            return response()->json(['message' => 'Media file not found.'], 404);
         }
-        abort(404, 'Media file not found.');
+        return response($file, 200, [
+            'Content-Type' => 'audio/webm', 
+            'Content-Disposition' => 'inline; filename="' . basename($comment->media_path) . '.webm"',
+        ]);
 
     }
 
