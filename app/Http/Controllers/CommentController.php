@@ -83,7 +83,6 @@ class CommentController
             'Content-Type' => 'audio/webm', 
             'Content-Disposition' => 'inline; filename="' . basename($comment->media_path) . '.webm"',
         ]);
-
     }
 
     public function markAsRead(Request $request)

@@ -61,7 +61,7 @@ Route::group([
     Route::apiResource('journals', JournalController::class);
     Route::apiResource('payments', PaymentController::class);
     Route::apiResource('comments', CommentController::class)->only(['index','store','show']);
-    Route::apiResource('attachments', AttachmentController::class)->only(['index','store','destroy']);
+    Route::apiResource('attachments', AttachmentController::class);
     Route::apiResource('contracts', ContractController::class);
 
 

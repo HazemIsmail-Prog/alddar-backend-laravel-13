@@ -3,126 +3,92 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
-use App\Models\Invoice;
-use App\Models\Order;
-use App\Models\Party;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
+use App\Http\Requests\Attachments\StoreAttachmentRequest;
 
 class AttachmentController
 {
-    /**
-     * @return array<string, class-string<Model>>
-     */
-    protected function attachableTypeMap(): array
-    {
-        return [
-            'order' => Order::class,
-            'invoice' => Invoice::class,
-            'party' => Party::class,
-        ];
-    }
 
-    protected function resolveAttachableClass(string $alias): string
-    {
-        $map = $this->attachableTypeMap();
-
-        abort_unless(isset($map[$alias]), 422, 'Invalid attachable_type.');
-
-        return $map[$alias];
-    }
-
-    protected function attachmentPayload(Attachment $attachment): array
-    {
-        $data = $attachment->load(['creator:id,name_en,name_ar'])->toArray();
-
-        if ($attachment->file_disk === 'public' && $attachment->file_path) {
-            $data['url'] = Storage::disk('public')->url($attachment->file_path);
-        } else {
-            $data['url'] = null;
-        }
-
-        return $data;
-    }
+    protected array $with = ['creator:id,name_ar,name_en'];
 
     public function index(Request $request)
     {
-        $aliasKeys = array_keys($this->attachableTypeMap());
 
         $validated = $request->validate([
-            'attachable_type' => ['required', 'string', Rule::in($aliasKeys)],
+            'attachable_type' => ['required', 'string'],
             'attachable_id' => ['required', 'integer'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $class = $this->resolveAttachableClass($validated['attachable_type']);
-        $parent = $class::query()->findOrFail($validated['attachable_id']);
-
         $attachments = Attachment::query()
-            ->whereMorphedTo('attachable', $parent)
-            ->with(['creator:id,name_en,name_ar'])
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 50));
-
-        $attachments->getCollection()->transform(function (Attachment $attachment) {
-            return $this->attachmentPayload($attachment);
-        });
+            ->where('attachable_type', $validated['attachable_type'])
+            ->where('attachable_id', $validated['attachable_id'])
+            ->with($this->with)
+            ->paginate($request->integer('per_page', 15));
 
         return response()->json($attachments);
     }
 
-    public function store(Request $request)
+    public function store(StoreAttachmentRequest $request)
     {
-        $aliasKeys = array_keys($this->attachableTypeMap());
 
-        $validated = $request->validate([
-            'attachable_type' => ['required', 'string', Rule::in($aliasKeys)],
-            'attachable_id' => ['required', 'integer'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'file' => ['required', 'file', 'max:51200'],
-        ]);
-
-        $class = $this->resolveAttachableClass($validated['attachable_type']);
-        $parent = $class::query()->findOrFail($validated['attachable_id']);
-
-        $file = $request->file('file');
-        $dir = 'attachments/'.now()->format('Y/m');
-        $path = $file->store($dir, 'public');
+        $validated = $request->validated();
+        $path = null;
 
         DB::beginTransaction();
         try {
-            $attachment = new Attachment([
-                'attachable_type' => $parent->getMorphClass(),
-                'attachable_id' => $parent->getKey(),
-                'created_by' => $request->user()->id,
-                'description' => $validated['description'] ?? null,
-                'file_disk' => 'public',
-                'file_path' => $path,
-                'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-            ]);
-            $attachment->save();
+
+            $file = $request->file('file');
+            $originalName = $file->getClientOriginalName();
+            $dir = 'attachments/';
+            $prefix = $validated['attachable_type'].'-'.$validated['attachable_id'].'-';
+            $name = $prefix.now()->format('Ymd-His').'-'.uniqid('', true);
+            $ext = strtolower((string) $file->getClientOriginalExtension());
+            $path = $file->storeAs($dir, $name.'.'.$ext, 's3');
+            $validated['file_disk'] = 's3';
+            $validated['file_path'] = $path;
+            $validated['original_name'] = $originalName;
+            $validated['mime_type'] = $file->getMimeType();
+
+            $attachment = Attachment::create($validated);
+            // broadcast(new AttachmentCreated($attachment->load($this->with)));
 
             DB::commit();
 
-            return response()->json($this->attachmentPayload($attachment), 201);
+            return response()->json($attachment->load($this->with), 201);
+
         } catch (\Throwable $e) {
+
             DB::rollBack();
-            if ($path && Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
+
+            if ($path && Storage::disk('s3')->exists($path)) {
+                Storage::disk('s3')->delete($path);
             }
 
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
+    public function show(Attachment $attachment)
+    {
+        // wanna return the file it self not the url
+        $file = Storage::disk('s3')->get($attachment->file_path);
+        if (!$file) {
+            return response()->json(['message' => 'File not found.'], 404);
+        }
+        return response($file, 200, [
+            'Content-Type' => $attachment->mime_type, 
+            'Content-Disposition' => 'inline; filename="' . basename($attachment->file_path) . '"',
+        ]);
+    }
+
     public function destroy(Request $request, Attachment $attachment)
     {
-        abort_unless($attachment->created_by === $request->user()->id, 403);
+        if ($attachment->created_by !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
 
         if ($attachment->file_disk && $attachment->file_path) {
             Storage::disk($attachment->file_disk)->delete($attachment->file_path);
