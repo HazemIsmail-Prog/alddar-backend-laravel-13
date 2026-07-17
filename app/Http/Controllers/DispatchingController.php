@@ -17,6 +17,7 @@ use App\Models\OrderStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Pusher\PushNotifications\PushNotifications;
 
 class DispatchingController
 {
@@ -252,6 +253,19 @@ class DispatchingController
                 $newTechnicianId = null;
             }
             broadcast(new OrderAssigned($order->load($this->with), $oldTechnicianId, $newTechnicianId));
+
+            $beamsClient = new PushNotifications([
+                'instanceId' => config('services.beams.instance_id'),
+                'secretKey' => config('services.beams.secret_key'),
+            ]);
+            $beamsClient->publishToUsers([(string) $newTechnicianId], [
+                'web' => [
+                    'notification' => [
+                        'title' => 'Your custom title here',
+                        'body' => 'Order #' . $order->order_number . ' assigned to you',
+                    ],
+                ],
+            ]);
     
             return response()->json($order->refresh());
 

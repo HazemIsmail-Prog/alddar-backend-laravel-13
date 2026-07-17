@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Pusher\PushNotifications\PushNotifications;
 
 class AuthController
 {
@@ -33,6 +34,23 @@ class AuthController
         $can = array_values((array) $request->user()->can);
         $user['can'] = $can;
         return response()->json($user);
+    }
+
+    public function beamsAuth(Request $request)
+    {
+        $userId = (string) $request->user()->id;
+        $userIdInQuery = (string) $request->query('user_id');
+
+        if ($userId !== $userIdInQuery) {
+            return response('Inconsistent request', 401);
+        }
+
+        $beamsClient = new PushNotifications([
+            'instanceId' => config('services.beams.instance_id'),
+            'secretKey' => config('services.beams.secret_key'),
+        ]);
+
+        return response()->json($beamsClient->generateToken($userId));
     }
 
     public function logout(Request $request)

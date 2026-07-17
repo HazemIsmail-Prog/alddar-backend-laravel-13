@@ -36,6 +36,7 @@ Route::group([
 
     // Auth
     Route::get('/user', [AuthController::class, 'getUser']);
+    Route::get('/pusher/beams-auth', [AuthController::class, 'beamsAuth']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/login', [AuthController::class, 'login'])
         ->withoutMiddleware(['auth:sanctum', 'is_active']);
