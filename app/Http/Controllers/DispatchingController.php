@@ -17,7 +17,7 @@ use App\Models\OrderStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Pusher\PushNotifications\PushNotifications;
+use App\Actions\SendNotificationToUserAction;
 
 class DispatchingController
 {
@@ -254,19 +254,14 @@ class DispatchingController
             }
             broadcast(new OrderAssigned($order->load($this->with), $oldTechnicianId, $newTechnicianId));
 
-            $beamsClient = new PushNotifications([
-                'instanceId' => config('services.beams.instance_id'),
-                'secretKey' => config('services.beams.secret_key'),
-            ]);
-            $beamsClient->publishToUsers([(string) $newTechnicianId], [
-                'web' => [
-                    'notification' => [
-                        'title' => 'لديك طلب جديد',
-                        'body' => $order->order_number,
-                        'deep_link' => 'https://limegreen-dog-271136.hostingersite.com',
-                    ],
-                ],
-            ]);
+            (new SendNotificationToUserAction())->handle(
+                $newTechnicianId,
+                'لديك طلب جديد',
+                $order->order_number,
+                config('services.beams.tech_frontend_url')
+            );
+
+            
     
             return response()->json($order->refresh());
 
