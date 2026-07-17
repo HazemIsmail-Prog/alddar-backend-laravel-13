@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Events\Comments\CommentCreated;
+use App\Actions\SendNotificationToUserAction;
 use App\Http\Requests\Comments\StoreCommentRequest;
+use App\Models\Order;
 
 class CommentController
 {
@@ -55,6 +57,15 @@ class CommentController
 
             $comment = Comment::create($validated);
             broadcast(new CommentCreated($comment->load($this->with)));
+
+            if($comment->notifiableToTechnician()) {
+                (new SendNotificationToUserAction())->handle(
+                    $comment->commentable->technician_id,
+                    'لديك تعليق جديد',
+                    $comment->body ?? 'رسالة صوتية',
+                    config('services.beams.tech_frontend_url')
+                );
+            }
 
             DB::commit();
 

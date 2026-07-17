@@ -51,13 +51,30 @@ class Comment extends Model
             ->withTimestamps();
     }
 
-    protected $appends = ['media_url'];
+    // protected $appends = ['media_url'];
 
-    public function getMediaUrlAttribute(): ?string
+    // public function getMediaUrlAttribute(): ?string
+    // {
+    //     if ($this->type === 'voice' && $this->media_disk === 'public' && $this->media_path) {
+    //         return Storage::disk($this->media_disk)->url($this->media_path);
+    //     }
+    //     return null;
+    // }
+
+    public function notifiableToTechnician()
     {
-        if ($this->type === 'voice' && $this->media_disk === 'public' && $this->media_path) {
-            return Storage::disk($this->media_disk)->url($this->media_path);
+        if($this->commentable_type === 'order') {
+            $commentable = $this->commentable;
+            if($commentable instanceof Order) {
+                return 
+                    $commentable->technician_id 
+                    && $commentable->is_inprogress
+                    && $commentable->technician_id !== $this->created_by 
+                    && $commentable->status_id !== OrderStatus::COMPLETED
+                    && $commentable->status_id !== OrderStatus::ASSIGNED
+                    ;
+            }
         }
-        return null;
+        return false;
     }
 }
