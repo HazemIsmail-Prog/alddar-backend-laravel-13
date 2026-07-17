@@ -261,8 +261,9 @@ class DispatchingController
             $beamsClient->publishToUsers([(string) $newTechnicianId], [
                 'web' => [
                     'notification' => [
-                        'title' => 'Your custom title here',
-                        'body' => 'Order #' . $order->order_number . ' assigned to you',
+                        'title' => 'لديك طلب جديد',
+                        'body' => $order->order_number,
+                        'link' => 'https://limegreen-dog-271136.hostingersite.com',
                     ],
                 ],
             ]);
