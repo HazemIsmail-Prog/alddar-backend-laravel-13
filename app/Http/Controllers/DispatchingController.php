@@ -263,7 +263,7 @@ class DispatchingController
                     'notification' => [
                         'title' => 'لديك طلب جديد',
                         'body' => $order->order_number,
-                        'link' => 'https://limegreen-dog-271136.hostingersite.com',
+                        'deep_link' => 'https://limegreen-dog-271136.hostingersite.com',
                     ],
                 ],
             ]);
