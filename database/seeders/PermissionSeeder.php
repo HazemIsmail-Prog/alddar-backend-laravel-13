@@ -415,6 +415,11 @@ class PermissionSeeder extends Seeder
                 'name_en' => 'contracts_delete',
                 'name_ar' => 'حذف العقود',
             ],
+            [
+                'value' => 'send_notifications',
+                'name_en' => 'send_notifications',
+                'name_ar' => 'إرسال الإشعارات',
+            ],
         ];
 
 

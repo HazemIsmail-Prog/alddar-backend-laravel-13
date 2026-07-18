@@ -14,6 +14,7 @@ class SendNotificationToUserAction
             'instanceId' => config('services.beams.instance_id'),
             'secretKey' => config('services.beams.secret_key'),
         ]);
+
         $beamsClient->publishToUsers([(string) $user_id], [
             'web' => [
                 'notification' => [

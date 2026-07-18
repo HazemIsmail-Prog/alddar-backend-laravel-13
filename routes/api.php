@@ -28,6 +28,7 @@ use App\Http\Controllers\DispatchingHistoryController;
 use App\Http\Controllers\DropdownListController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\TechnicianController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::group([
@@ -62,6 +63,7 @@ Route::group([
     Route::apiResource('journals', JournalController::class);
     Route::apiResource('payments', PaymentController::class);
     Route::apiResource('comments', CommentController::class)->only(['index','store','show']);
+    Route::apiResource('notifications', NotificationController::class)->only(['index','store']);
     Route::apiResource('attachments', AttachmentController::class);
     Route::apiResource('contracts', ContractController::class);
 
