@@ -11,22 +11,27 @@ use App\Http\Requests\Orders\StoreOrderRequest;
 use App\Http\Requests\Orders\UpdateOrderRequest;
 use App\Events\Orders\OrderAssigned;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderController
 {
-    protected array $with = [
-        'items',
-        'dispatchingHistories',
-        'invoices',
-        'party',
-        'department',
-        'technician',
-        'status',
-        'location',
-        'phone',
-    ];
 
     protected array $searchable = ['order_date','order_number'];
+
+    private function loadRelatedData(Model $model): Model
+    {
+        return $model
+            ->load('party:id,name')
+            ->load('department:id,name_ar,name_en')
+            ->load('technician:id,name_ar,name_en')
+            ->load('status:id,name,color')
+            ->load('location')
+            ->load('phone')
+            ->append('can_update')
+            ->append('can_delete')
+            ->append('is_un_invoiced_completed_orders')
+        ;
+    }
 
     public function index(Request $request)
     {
@@ -51,7 +56,6 @@ class OrderController
 
 
         $query = Order::query()
-            ->with($this->with)
             ->orderBy('id', 'desc');
             if($request->has('order_type')) {
                 $query->where('order_type', $request->order_type);
@@ -89,14 +93,20 @@ class OrderController
 
         $orders = $query->paginate($request->has('per_page') ? $request->integer('per_page') : 15);
 
-        return response()->json($orders);
-
+        return response()->json([
+            'data' => collect($orders->items())->map(fn($order) => $this->loadRelatedData($order)),
+            'current_page' => $orders->currentPage(),
+            'last_page' => $orders->lastPage(),
+            'next_page_url' => $orders->nextPageUrl() ?? null,
+            'per_page' => $orders->perPage(),
+            'total' => $orders->total(),
+        ]);
     }
 
     public function show(Order $order)
     {
-        return response()->json($order->load($this->with));
-    }
+        return response()->json($this->loadRelatedData($order));
+        }
 
     public function store(StoreOrderRequest $request)
     {
@@ -142,11 +152,11 @@ class OrderController
                 $order->dispatchingHistories()->create();
             }
             DB::commit();
-            broadcast(new OrderCreated($order->load($this->with)));
+            broadcast(new OrderCreated($this->loadRelatedData($order)));
             if ($order->technician_id && $order->sort_number === 0) {
-                broadcast(new OrderAssigned($order->load($this->with), null, $order->technician_id));
+                broadcast(new OrderAssigned($this->loadRelatedData($order), null, $order->technician_id));
                 }
-            return response()->json($order->load($this->with));
+            return response()->json($this->loadRelatedData($order));
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
@@ -164,8 +174,8 @@ class OrderController
             $order->update($orderData);
             $order->syncMany('items', $itemsData);
             DB::commit();
-            broadcast(new OrderUpdated($order->load($this->with)));
-            return response()->json($order->load($this->with));
+            broadcast(new OrderUpdated($this->loadRelatedData($order)));
+            return response()->json($this->loadRelatedData($order));
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
@@ -181,8 +191,8 @@ class OrderController
             $order->dispatchingHistories()->delete();
             $order->delete();
             DB::commit();
-            broadcast(new OrderDeleted($order->load($this->with)));
-            return response()->json($order);
+            broadcast(new OrderDeleted($this->loadRelatedData($order)));
+            return response()->json($this->loadRelatedData($order));
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
