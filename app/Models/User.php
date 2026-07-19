@@ -24,7 +24,7 @@ class User extends Authenticatable
 
     protected $guarded = [];
 
-    protected $appends = ['can_update', 'can_delete', 'name'];
+    protected $appends = ['name'];
 
     /**
      * Get the attributes that should be cast.

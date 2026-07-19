@@ -7,13 +7,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
+use Illuminate\Database\Eloquent\Model;
 
 class UserController
 {
-    protected array $with = ['permissions:id', 'roles:id,name_en,name_ar', 'departments:id,name_en,name_ar', 'warehouses:id,name_en,name_ar'];
 
     protected array $searchable = ['name_en', 'name_ar', 'email', 'civil_id'];
     protected array $select = ['id', 'name_en', 'name_ar', 'email', 'civil_id', 'is_technician', 'is_active'];
+
+    private function loadRelatedData(Model $model): Model
+    {
+        return $model
+            ->load('permissions:id,name_en,name_ar')
+            ->load('roles:id,name_en,name_ar')
+            ->load('departments:id,name_en,name_ar')
+            ->load('warehouses:id,name_en,name_ar')
+            ->append('can_update')
+            ->append('can_delete')
+        ;
+    }
 
     public function index(Request $request)
     {
@@ -23,7 +35,6 @@ class UserController
         
         $query = User::query()
             ->select($this->select)
-            ->with($this->with)
             ->orderBy('id', 'desc');
 
         if($request->has('search')) {
@@ -79,7 +90,7 @@ class UserController
         $users = $query->paginate($request->has('per_page') ? $request->integer('per_page') : 15);
 
         return response()->json([
-            'data' => $users->items(),
+            'data' => collect($users->items())->map(fn($user) => $this->loadRelatedData($user)),
             'current_page' => $users->currentPage(),
             'last_page' => $users->lastPage(),
             'next_page_url' => $users->nextPageUrl(),
@@ -109,7 +120,7 @@ class UserController
             }
             DB::commit();
 
-            return response()->json($user->load($this->with));
+            return response()->json($this->loadRelatedData($user));
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -170,7 +181,7 @@ class UserController
 
             DB::commit();
 
-            return response()->json($user->load($this->with));
+            return response()->json($this->loadRelatedData($user));
 
         } catch (\Exception $e) {
 
@@ -185,6 +196,6 @@ class UserController
     {
         $user->delete();
 
-        return response()->json($user);
+        return response()->json($this->loadRelatedData($user));
     }
 }
