@@ -11,7 +11,7 @@ class Department extends Model
 
     protected $guarded = [];
 
-    protected $appends = ['can_update', 'can_delete', 'name'];
+    protected $appends = ['name'];
 
     public function getNameAttribute(): object
     {
