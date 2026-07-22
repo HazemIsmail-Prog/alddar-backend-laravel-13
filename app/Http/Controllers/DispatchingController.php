@@ -18,14 +18,31 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Actions\SendNotificationToUserAction;
+use Illuminate\Database\Eloquent\Model;
 
 class DispatchingController
 {
-    protected array $with = [
-        'party',
-        'location',
-        'phone',
-    ];
+    // protected array $with = [
+    //     'party',
+    //     'location',
+    //     'phone',
+    // ];
+
+    private function loadRelatedData(Model $model): Model
+    {
+        return $model
+            ->load('party:id,name')
+            ->load('department:id,name_ar,name_en')
+            ->load('technician:id,name_ar,name_en')
+            ->load('status:id,name,color')
+            ->load('location')
+            ->load('phone')
+            ->loadCount('invoices')
+            ->append('can_update')
+            ->append('can_delete')
+            ->append('is_un_invoiced_completed_orders')
+        ;
+    }
 
     public function index(Department $department)
     {
@@ -64,7 +81,6 @@ class DispatchingController
             ->count();
 
         $orders = Order::query()
-            ->with($this->with)
             ->where('department_id', $department->id)
             ->where('is_confirmed_to_dispatch', true)
             ->whereIn('status_id', [1, 2, 3, 4, 5])
@@ -86,7 +102,7 @@ class DispatchingController
             ->get();
 
         return response()->json([
-            'orders' => $orders,
+            'orders' => collect($orders)->map(fn($order) => $this->loadRelatedData($order)),
             'technicians' => $technicians,
             'orderStatuses' => $orderStatuses,
             'todayCompletedOrdersCount' => $todayCompletedOrdersCount,
@@ -125,7 +141,7 @@ class DispatchingController
                 $oldTechnicianId = null;
             }
 
-            broadcast(new OrderUnassigned($order->load($this->with), $oldTechnicianId));
+            broadcast(new OrderUnassigned($this->loadRelatedData($order), $oldTechnicianId));
     
             return response()->json($order->refresh());
 
@@ -164,7 +180,7 @@ class DispatchingController
                 // clear old Technician ID to prevent dispatching to the old technician
                 $oldTechnicianId = null;
             }
-            broadcast(new OrderHolded($order->load($this->with), $oldTechnicianId));
+            broadcast(new OrderHolded($this->loadRelatedData($order), $oldTechnicianId));
     
             return response()->json($order->refresh());
 
@@ -203,7 +219,7 @@ class DispatchingController
                 $oldTechnicianId = null;
             }
 
-            broadcast(new OrderCancelled($order->load($this->with), $oldTechnicianId));
+            broadcast(new OrderCancelled($this->loadRelatedData($order), $oldTechnicianId));
 
             return response()->json($order->refresh());
 
@@ -252,7 +268,7 @@ class DispatchingController
                 // clear new Technician ID to prevent dispatching to the new technician
                 $newTechnicianId = null;
             }
-            broadcast(new OrderAssigned($order->load($this->with), $oldTechnicianId, $newTechnicianId));
+            broadcast(new OrderAssigned($this->loadRelatedData($order), $oldTechnicianId, $newTechnicianId));
 
             (new SendNotificationToUserAction())->handle(
                 $newTechnicianId,
@@ -288,7 +304,7 @@ class DispatchingController
             // clear Technician ID to prevent dispatching to the technician
             $technicianId = null;
         }
-        broadcast(new OrderMoved($order->load($this->with), $technicianId));
+        broadcast(new OrderMoved($this->loadRelatedData($order), $technicianId));
         return response()->json($order->refresh());
     }
 }

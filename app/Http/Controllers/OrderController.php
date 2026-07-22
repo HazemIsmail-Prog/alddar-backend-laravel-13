@@ -27,6 +27,7 @@ class OrderController
             ->load('status:id,name,color')
             ->load('location')
             ->load('phone')
+            ->loadCount('invoices')
             ->append('can_update')
             ->append('can_delete')
             ->append('is_un_invoiced_completed_orders')
